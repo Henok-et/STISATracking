@@ -1,0 +1,590 @@
+// =============================================================================
+// STISA 2034 — Monitoring & Evaluation Platform
+// PostgreSQL schema
+// =============================================================================
+//
+// Design principles enforced here:
+//   1. Historical submissions are immutable per (country, reporting cycle).
+//      The @@unique([countryId, reportingCycleId]) constraint makes it
+//      structurally impossible for a 2028 submission to overwrite a 2026 one.
+//   2. Indicator definitions are versioned. Every SubmissionValue pins the
+//      IndicatorVersion it was captured under, so a later re-definition can
+//      never retroactively change the meaning of historical data.
+//   3. Missing data is never zero. `dataAvailable` and `validationStatus`
+//      carry the reason a value is absent; numeric columns stay NULL.
+//   4. Reporting years are data, not code. ReportingCycle rows decide when
+//      reporting is open.
+//   5. Every state-changing action is auditable via AuditLog.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -----------------------------------------------------------------------------
+// Taxonomy enums — mirrored from src/data/stisa-taxonomy.ts
+// -----------------------------------------------------------------------------
+
+/// The result levels of the STISA 2034 MEAL Plan results framework that this
+/// platform collects against. The Impact level is out of scope and excluded.
+enum ResultLevel {
+  OUTCOME
+  SECTORIAL_PRIORITY
+  STRATEGIC_PRIORITY
+}
+
+/// How an indicator's value is stored and validated.
+enum IndicatorDataType {
+  INTEGER
+  DECIMAL
+  PERCENTAGE
+  CURRENCY
+  BOOLEAN
+  TEXT
+  URL
+  CATEGORICAL
+}
+
+/// How progress toward target is computed. UNDEFINED means the source
+/// document gives no methodology — the analytics engine refuses to score it
+/// rather than silently applying a default formula.
+enum CalculationMethod {
+  PERCENTAGE_CHANGE
+  PERCENTAGE_POINT_CHANGE
+  ABSOLUTE_COUNT
+  ABSOLUTE_VALUE
+  SHARE_OF_TOTAL
+  INDEX_SCORE
+  RATIO
+  BINARY_ACHIEVEMENT
+  CUSTOM
+  UNDEFINED
+}
+
+enum Direction {
+  HIGHER_IS_BETTER
+  LOWER_IS_BETTER
+  TARGET_IS_BETTER
+  NOT_APPLICABLE
+}
+
+/// Where a piece of indicator metadata came from.
+enum Provenance {
+  SOURCE_DOCUMENT
+  INFERRED_FROM_WORDING
+  PLATFORM_ASSIGNED
+  NOT_PROVIDED
+}
+
+enum UnitOfAnalysis {
+  COUNTRY
+  CONTINENTAL
+  MIXED
+}
+
+/// Machine-readable ambiguity markers carried from the extraction.
+enum IndicatorFlag {
+  NO_BASELINE_IN_SOURCE
+  NO_TARGET_IN_SOURCE
+  NO_OFFICIAL_CODE_IN_SOURCE
+  NO_DEFINITION_IN_SOURCE
+  NO_METHODOLOGY_IN_SOURCE
+  COMPOUND_STATEMENT
+  DUPLICATE_OF_ANOTHER_ROW
+  OVERLAPS_ANOTHER_ROW
+  REQUIRES_DISAGGREGATION
+  CONTINENTAL_LEVEL_WORDING
+  UNIT_NOT_SPECIFIED
+  AMBIGUOUS_MEASUREMENT_BASIS
+  DIRECTION_INFERRED
+}
+
+// -----------------------------------------------------------------------------
+// Workflow / access enums
+// -----------------------------------------------------------------------------
+
+/// Roles are an enum today but authorization is expressed through capability
+/// checks (see src/lib/auth/permissions.ts) so new roles can be added without
+/// rewriting call sites.
+enum UserRole {
+  ADMIN
+  FOCAL_POINT
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  REVISION_REQUIRED
+  APPROVED
+  PUBLISHED
+}
+
+/// The state of one reported indicator value.
+/// Explicitly distinguishes "not reported" from "reported as zero".
+enum ValueState {
+  NOT_REPORTED
+  PENDING_VALIDATION
+  REPORTED
+  NOT_APPLICABLE
+  INVALID
+}
+
+enum CyclePhase {
+  PHASE_1
+  PHASE_2
+}
+
+enum CycleStatus {
+  PLANNED
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  SUBMISSION_CREATED
+  SUBMISSION_VALUE_CHANGED
+  SUBMISSION_SUBMITTED
+  SUBMISSION_REVIEW_STARTED
+  SUBMISSION_REVISION_REQUESTED
+  SUBMISSION_UNLOCKED
+  SUBMISSION_APPROVED
+  SUBMISSION_PUBLISHED
+  SUBMISSION_UNPUBLISHED
+  USER_CREATED
+  USER_UPDATED
+  USER_DEACTIVATED
+  USER_COUNTRY_ASSIGNED
+  USER_PASSWORD_RESET
+  INDICATOR_CREATED
+  INDICATOR_UPDATED
+  INDICATOR_DEACTIVATED
+  INDICATOR_VERSION_CREATED
+  COUNTRY_UPDATED
+  REPORTING_CYCLE_CREATED
+  REPORTING_CYCLE_UPDATED
+  EXPORT_GENERATED
+}
+
+// -----------------------------------------------------------------------------
+// Reference data
+// -----------------------------------------------------------------------------
+
+/// The five official AU geographical regions.
+model Region {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String    @unique
+  sortOrder Int       @default(0)
+  countries Country[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("regions")
+}
+
+/// AU Member States. Seeded with all 55.
+model Country {
+  id        String  @id @default(cuid())
+  /// Official long-form name.
+  name      String  @unique
+  /// Short display name used in tables and charts.
+  shortName String
+  /// ISO 3166-1 alpha-2. Used as the public URL segment: /countries/[code]
+  iso2      String  @unique
+  /// ISO 3166-1 alpha-3.
+  iso3      String  @unique
+  regionId  String
+  region    Region  @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  active    Boolean @default(true)
+
+  users       User[]
+  submissions Submission[]
+  auditLogs   AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([regionId])
+  @@index([active])
+  @@map("countries")
+}
+
+/// A category of the MEAL Plan results table (18 in total, across 4 result levels).
+model Sector {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  name            String
+  subtitle        String?
+  resultLevel     ResultLevel
+  /// Verbatim result statement the group sits under, where the source gives one.
+  resultStatement String?
+  sortOrder       Int         @default(0)
+  active          Boolean     @default(true)
+
+  indicators Indicator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resultLevel])
+  @@index([sortOrder])
+  @@map("sectors")
+}
+
+// -----------------------------------------------------------------------------
+// Indicators
+// -----------------------------------------------------------------------------
+
+/// One row of the MEAL Plan indicator table.
+///
+/// `sourceText` is the immutable verbatim transcription and must never be
+/// edited. Editable definitional metadata is snapshotted into IndicatorVersion
+/// whenever it changes.
+model Indicator {
+  id       String @id @default(cuid())
+  /// Platform-assigned code (the source document numbers nothing).
+  code     String @unique
+  sectorId String
+  sector   Sector @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+
+  /// Display name: sourceText with trailing punctuation trimmed.
+  officialName String
+  /// VERBATIM transcription of the source cell. Never edit.
+  sourceText   String
+  /// Official definition, once the AU supplies one. NULL until then.
+  definition   String?
+  description  String?
+
+  unit              String
+  unitProvenance    Provenance
+  dataType          IndicatorDataType
+  dataTypeProvenance Provenance
+  calculationMethod CalculationMethod
+  calculationProvenance Provenance
+  direction         Direction
+  directionProvenance Provenance
+  unitOfAnalysis    UnitOfAnalysis
+
+  /// Ambiguities carried from extraction, surfaced in the admin UI.
+  flags         IndicatorFlag[]
+  ambiguityNote String?
+  /// Codes of indicators this one duplicates or overlaps.
+  relatedCodes  String[]
+
+  /// Traceability back to the printed source.
+  sourcePage Int
+  sourceRow  Int
+  sortOrder  Int @default(0)
+
+  /// Whether focal points must supply a value for this indicator.
+  required Boolean @default(true)
+  /// Whether a source citation is mandatory when a value is reported.
+  sourceRequired Boolean @default(true)
+  active   Boolean @default(true)
+
+  /// Monotonically increasing; points at the latest IndicatorVersion.version.
+  currentVersion Int @default(1)
+
+  versions IndicatorVersion[]
+  values   SubmissionValue[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sectorId])
+  @@index([active])
+  @@index([sortOrder])
+  @@map("indicators")
+}
+
+/// Immutable snapshot of an indicator's definition at a point in time.
+/// Every SubmissionValue pins one of these so historical data keeps the
+/// definition it was collected under across future STISA reporting cycles.
+model IndicatorVersion {
+  id          String    @id @default(cuid())
+  indicatorId String
+  indicator   Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+  version     Int
+
+  officialName      String
+  sourceText        String
+  definition        String?
+  description       String?
+  unit              String
+  dataType          IndicatorDataType
+  calculationMethod CalculationMethod
+  direction         Direction
+  unitOfAnalysis    UnitOfAnalysis
+  flags             IndicatorFlag[]
+  ambiguityNote     String?
+  required          Boolean
+  sourceRequired    Boolean
+
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  changeReason  String?
+  createdById   String?
+  createdBy     User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  values SubmissionValue[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([indicatorId, version])
+  @@index([indicatorId])
+  @@map("indicator_versions")
+}
+
+// -----------------------------------------------------------------------------
+// Reporting cycles
+// -----------------------------------------------------------------------------
+
+/// The official STISA 2034 reporting schedule, stored as data.
+/// Phase 1 (2025-2029) reports in 2026 and 2028.
+/// Phase 2 (2030-2034) reports in 2030 and 2033.
+/// No other year is a reporting year; the absence of a row is what closes a year.
+model ReportingCycle {
+  id                      String      @id @default(cuid())
+  phase                   CyclePhase
+  implementationStartYear Int
+  implementationEndYear   Int
+  /// The year Member States report for. Unique across the whole strategy.
+  reportingYear           Int         @unique
+  opensAt                 DateTime
+  closesAt                DateTime
+  status                  CycleStatus @default(PLANNED)
+  /// Exactly one cycle should be flagged active at a time; enforced in code.
+  active                  Boolean     @default(false)
+  label                   String
+  notes                   String?
+
+  submissions Submission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([reportingYear])
+  @@map("reporting_cycles")
+}
+
+// -----------------------------------------------------------------------------
+// Users
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(FOCAL_POINT)
+  /// Required for FOCAL_POINT, must be NULL for ADMIN. Enforced in code and
+  /// re-checked server-side on every mutation.
+  countryId    String?
+  country      Country? @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  active       Boolean  @default(true)
+
+  title       String?
+  organisation String?
+  phone       String?
+
+  lastLoginAt      DateTime?
+  passwordChangedAt DateTime?
+  mustChangePassword Boolean  @default(false)
+
+  createdSubmissions   Submission[] @relation("SubmissionCreatedBy")
+  submittedSubmissions Submission[] @relation("SubmissionSubmittedBy")
+  reviewedSubmissions  Submission[] @relation("SubmissionReviewedBy")
+  approvedSubmissions  Submission[] @relation("SubmissionApprovedBy")
+  publishedSubmissions Submission[] @relation("SubmissionPublishedBy")
+  revisionRequests     Submission[] @relation("SubmissionRevisionRequestedBy")
+  updatedValues        SubmissionValue[]
+  indicatorVersions    IndicatorVersion[]
+  auditLogs            AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([countryId])
+  @@index([role])
+  @@index([active])
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Submissions
+// -----------------------------------------------------------------------------
+
+/// One country's data return for one reporting cycle.
+/// The composite unique key is the structural guarantee that a country's 2026
+/// return can never be overwritten by its 2028 return.
+model Submission {
+  id               String         @id @default(cuid())
+  countryId        String
+  country          Country        @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  reportingCycleId String
+  reportingCycle   ReportingCycle @relation(fields: [reportingCycleId], references: [id], onDelete: Restrict)
+
+  status SubmissionStatus @default(DRAFT)
+
+  /// Cached completeness so admin lists over 55 countries need no N+1 queries.
+  /// Recomputed on every value mutation and on status transitions.
+  reportedCount  Int @default(0)
+  expectedCount  Int @default(0)
+  completenessPct Decimal @default(0) @db.Decimal(5, 2)
+
+  createdById String?
+  createdBy   User?   @relation("SubmissionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  submittedAt DateTime?
+  submittedById String?
+  submittedBy   User?   @relation("SubmissionSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+
+  reviewedAt DateTime?
+  reviewedById String?
+  reviewedBy   User?   @relation("SubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  revisionRequestedAt DateTime?
+  revisionRequestedById String?
+  revisionRequestedBy   User?   @relation("SubmissionRevisionRequestedBy", fields: [revisionRequestedById], references: [id], onDelete: SetNull)
+  revisionNote          String?
+
+  approvedAt DateTime?
+  approvedById String?
+  approvedBy   User?   @relation("SubmissionApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  publishedAt DateTime?
+  publishedById String?
+  publishedBy   User?   @relation("SubmissionPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  values    SubmissionValue[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([countryId, reportingCycleId])
+  @@index([status])
+  @@index([reportingCycleId, status])
+  @@index([countryId])
+  @@map("submissions")
+}
+
+/// One indicator's value within a submission.
+///
+/// Missing data is NEVER stored as 0. When `dataAvailable` is false the numeric
+/// columns stay NULL and `validationStatus` records why.
+model SubmissionValue {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  indicatorId  String
+  indicator    Indicator  @relation(fields: [indicatorId], references: [id], onDelete: Restrict)
+  /// The definition this value was captured under.
+  indicatorVersionId String
+  indicatorVersion   IndicatorVersion @relation(fields: [indicatorVersionId], references: [id], onDelete: Restrict)
+
+  /// False means the country cannot supply this figure. Numeric columns stay NULL.
+  dataAvailable Boolean @default(false)
+
+  // Numeric payload (INTEGER / DECIMAL / PERCENTAGE / CURRENCY).
+  baselineValue Decimal? @db.Decimal(20, 6)
+  targetValue   Decimal? @db.Decimal(20, 6)
+  actualValue   Decimal? @db.Decimal(20, 6)
+
+  // Non-numeric payload.
+  booleanValue     Boolean?
+  textValue        String?
+  categoricalValue String?
+
+  /// Reporting year the baseline refers to, where the country can state it.
+  baselineYear Int?
+  /// Currency code for CURRENCY indicators (the source specifies none).
+  currencyCode String?
+
+  notes      String?
+  sourceName String?
+  sourceUrl  String?
+
+  validationStatus  ValueState @default(NOT_REPORTED)
+  /// Human-readable validation failures produced by the server-side validator.
+  validationMessages String[]
+
+  updatedById String?
+  updatedBy   User?   @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([submissionId, indicatorId])
+  @@index([indicatorId])
+  @@index([validationStatus])
+  @@index([submissionId, validationStatus])
+  @@map("submission_values")
+}
+
+// -----------------------------------------------------------------------------
+// Audit
+// -----------------------------------------------------------------------------
+
+/// Append-only trail. Answers: who changed this, from what, to what, and when.
+model AuditLog {
+  id     String      @id @default(cuid())
+  action AuditAction
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Denormalised so the trail survives user deletion.
+  actorEmail String?
+  actorRole  UserRole?
+
+  /// Model name, e.g. "SubmissionValue".
+  entity   String
+  entityId String?
+
+  countryId String?
+  country   Country? @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  submissionId String?
+  submission   Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  oldValue Json?
+  newValue Json?
+  metadata Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([countryId])
+  @@index([submissionId])
+  @@map("audit_logs")
+}
+
+/// Persistent counter backing authentication rate limiting, so limits hold
+/// across server instances and restarts.
+model AuthThrottle {
+  id          String   @id @default(cuid())
+  /// Bucket key, e.g. "login:ip:203.0.113.4" or "login:email:x@y.z".
+  key         String   @unique
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+  blockedUntil DateTime?
+
+  @@index([windowStart])
+  @@map("auth_throttles")
+}
