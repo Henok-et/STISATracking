@@ -66,7 +66,14 @@ export function StatCard({
   const hasValue = value !== null && value !== undefined && value !== '';
 
   return (
-    <Card className={cn('h-full', className)}>
+    <Card
+      className={cn(
+        'h-full transition-shadow hover:shadow-md',
+        tone === 'primary' && 'border-t-2 border-t-primary',
+        tone === 'accent' && 'border-t-2 border-t-accent',
+        className,
+      )}
+    >
       <CardContent className="flex h-full flex-col gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-muted-foreground text-sm font-medium">{label}</p>
@@ -74,8 +81,8 @@ export function StatCard({
             <span
               className={cn(
                 'grid size-8 shrink-0 place-items-center rounded-md',
-                tone === 'primary' && 'bg-primary/10 text-primary',
-                tone === 'accent' && 'bg-accent/15 text-accent-foreground',
+                tone === 'primary' && 'bg-primary/15 text-primary',
+                tone === 'accent' && 'bg-accent/20 text-accent-foreground',
                 tone === 'default' && 'bg-muted text-muted-foreground',
               )}
               aria-hidden
@@ -120,7 +127,7 @@ export function StatCard({
 export type MeterTone = 'primary' | 'accent' | 'success' | 'completeness' | 'progress';
 
 const METER_FILL: Record<MeterTone, string> = {
-  primary: 'bg-primary',
+  primary: 'grad-progress',
   accent: 'bg-accent',
   success: 'bg-success',
   completeness: 'bg-[var(--color-chart-1)]',
@@ -483,6 +490,12 @@ export function StatusBadge({
   const t = useTranslations('status');
   return (
     <Badge variant="outline" className={cn('font-medium', STATUS_TONE[status], className)}>
+      {(status === 'SUBMITTED' || status === 'UNDER_REVIEW') && (
+        <span
+          className="me-1.5 inline-block size-1.5 animate-pulse rounded-full bg-current"
+          aria-hidden
+        />
+      )}
       {t(status)}
     </Badge>
   );

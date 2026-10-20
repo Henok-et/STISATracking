@@ -307,9 +307,6 @@ export async function notifyCycleOpened(reportingCycleId: string): Promise<{ sen
           `STISA 2034 reporting for ${cycle.reportingYear} is now open.`,
           `${person.country?.shortName ?? 'Your Member State'} can enter and submit data until`,
           `${cycle.closesAt.toISOString().slice(0, 10)}.`,
-          '',
-          'You can complete the indicators in the portal, or download the Excel',
-          'template, complete it offline and upload it.',
         ],
         { label: 'Open the reporting portal', href: `${APP_URL()}/portal/data-entry` },
       );

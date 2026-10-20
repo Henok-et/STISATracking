@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:17
+    container_name: stisa-db
+    restart: always
+    environment:
+      POSTGRES_USER: stisa
+      POSTGRES_PASSWORD: stisa
+      POSTGRES_DB: stisa
+    ports:
+      - '5432:5432'
+    volumes:
+      - stisa_pgdata:/var/lib/postgresql/data
+
+volumes:
+  stisa_pgdata:

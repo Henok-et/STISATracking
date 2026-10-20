@@ -64,24 +64,29 @@ export default async function PortalDashboard() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
       <Reveal>
-        <div className="mb-8">
-          <p className="text-muted-foreground text-sm">{actor.countryName}</p>
-          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
-            {availability.cycle
-              ? availability.cycle.label
-              : tx('reportingYear', { year: new Date().getUTCFullYear() })}
-          </h1>
-          {availability.cycle ? (
-            <p className="text-muted-foreground mt-1 text-sm">
-              {availability.cycle.phase === 'PHASE_1' ? tx('phase1') : tx('phase2')}
-              {` · ${tx('closes')} `}
-              {availability.cycle.closesAt.toLocaleDateString(locale, {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                timeZone: 'UTC',
-              })}
-            </p>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border bg-gradient-to-r from-primary/8 via-transparent to-accent/5 px-6 py-5 ring-1 ring-primary/10">
+          <div>
+            <p className="text-muted-foreground text-sm font-medium">{actor.countryName}</p>
+            <h1 className="mt-0.5 text-2xl font-semibold sm:text-3xl">
+              {availability.cycle
+                ? availability.cycle.label
+                : tx('reportingYear', { year: new Date().getUTCFullYear() })}
+            </h1>
+            {availability.cycle ? (
+              <p className="text-muted-foreground mt-1 text-sm">
+                {availability.cycle.phase === 'PHASE_1' ? tx('phase1') : tx('phase2')}
+                {` · ${tx('closes')} `}
+                {availability.cycle.closesAt.toLocaleDateString(locale, {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  timeZone: 'UTC',
+                })}
+              </p>
+            ) : null}
+          </div>
+          {current ? (
+            <StatusBadge status={current.status} className="text-sm px-3 py-1" />
           ) : null}
         </div>
       </Reveal>
@@ -219,12 +224,21 @@ export default async function PortalDashboard() {
                       {readiness.checks.map((c) => (
                         <li
                           key={c.key}
-                          className="flex items-start gap-2.5 rounded-md border p-3 text-sm"
+                          className={[
+                            'flex items-start gap-3 rounded-xl border p-3.5 text-sm transition-colors duration-200',
+                            c.passed
+                              ? 'border-success/30 bg-success/8'
+                              : 'border-warning/35 bg-warning/8',
+                          ].join(' ')}
                         >
                           {c.passed ? (
-                            <CheckCircle2 className="text-success mt-0.5 size-4 shrink-0" aria-hidden />
+                            <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success/20">
+                              <CheckCircle2 className="text-success size-3.5" aria-hidden />
+                            </span>
                           ) : (
-                            <AlertCircle className="text-warning mt-0.5 size-4 shrink-0" aria-hidden />
+                            <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-warning/20">
+                              <AlertCircle className="text-warning size-3.5" aria-hidden />
+                            </span>
                           )}
                           <span>
                             <span className="font-medium">{c.label}</span>

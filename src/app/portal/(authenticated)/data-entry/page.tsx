@@ -12,7 +12,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ButtonLink } from '@/components/ui/button-link';
 import { StatusBadge } from '@/components/data-display';
 import { DataEntryWorkspace, type WorkspaceSector } from './workspace';
-import { WorkbookImport } from './workbook-import';
 
 export const metadata: Metadata = {
   title: 'Data entry',
@@ -177,17 +176,6 @@ export default async function DataEntryPage() {
         </Alert>
       ) : null}
 
-      <div className="mb-6">
-        <WorkbookImport submissionId={submission.id} editable={editable} />
-      </div>
-
-      {/*
-        The workspace seeds its editing state with useState initialisers, which
-        run only on mount. A bulk change made on the server — importing a
-        workbook — would otherwise leave the form showing the values it had at
-        page load. Keying on the submission's own updatedAt remounts it with
-        fresh data whenever the server row actually changed.
-      */}
       <DataEntryWorkspace
         key={`${submission.id}:${submission.status}:${submission.updatedAt.toISOString()}`}
         submissionId={submission.id}

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AnchorButton, ButtonLink } from '@/components/ui/button-link';
 import { StatusBadge, Meter, SectionHeading } from '@/components/data-display';
 import { Reveal } from '@/components/reveal';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Submissions',
@@ -150,7 +151,13 @@ export default async function AdminSubmissionsPage({
                 </thead>
                 <tbody>
                   {submissions.map((s) => (
-                    <tr key={s.id} className="hover:bg-muted/40 border-b last:border-0">
+                    <tr
+                      key={s.id}
+                      className={cn(
+                        'hover:bg-primary/4 border-b last:border-0 transition-colors duration-200',
+                        s.status === 'REVISION_REQUIRED' && 'border-l-2 border-l-accent',
+                      )}
+                    >
                       <td className="py-2.5 pr-3">
                         <span className="font-medium">{s.country.shortName}</span>
                         <span className="text-muted-foreground block text-xs">

@@ -5,16 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =============================================================================
-   STISA 2034 design tokens
+   STISA 2034 design tokens — AU Palette Edition
    -----------------------------------------------------------------------------
-   The palette is drawn from the Implementation Plan STISA 2034 document itself:
-   a deep institutional maroon with an African Union gold accent, on a warm
-   neutral ground. Every colour is defined in both themes; nothing relies on a
-   media query alone.
+   Light mode  : AU Green (#009B4D → #0F5A36) primary · Amber (#FF9900) accent
+   Dark mode   : Tech Green (#00C853 → #007A78) primary · Gold (#FFCC00) accent
 
-   Chart colours are a categorical ramp chosen to stay distinguishable in both
-   themes and to hold up under the AA contrast requirement against card
-   backgrounds.
+   All colours are expressed in OKLCH so the browser interpolates them in a
+   perceptually uniform space.  Every token is defined in both themes.
    ========================================================================== */
 
 @theme inline {
@@ -68,117 +65,139 @@
   --radius-3xl: calc(var(--radius) * 2.2);
 }
 
+/* ── Light mode ─────────────────────────────────────────────────────────── */
 :root {
-  --background: oklch(0.985 0.004 60);
-  --foreground: oklch(0.19 0.012 20);
+  /* Off-white canvas: #F8FAFC feel with a hint of green */
+  --background: oklch(0.984 0.004 145);
+  --foreground: oklch(0.18 0.02 155);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.19 0.012 20);
+  --card-foreground: oklch(0.18 0.02 155);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.19 0.012 20);
+  --popover-foreground: oklch(0.18 0.02 155);
 
-  /* STISA maroon */
-  --primary: oklch(0.42 0.152 12);
-  --primary-foreground: oklch(0.99 0.004 60);
+  /* AU Green  #009B4D */
+  --primary: oklch(0.57 0.155 155);
+  --primary-foreground: oklch(0.99 0.004 110);
 
-  --secondary: oklch(0.955 0.008 40);
-  --secondary-foreground: oklch(0.28 0.05 14);
+  --secondary: oklch(0.952 0.014 148);
+  --secondary-foreground: oklch(0.28 0.06 155);
 
-  --muted: oklch(0.958 0.006 50);
-  --muted-foreground: oklch(0.5 0.018 30);
+  --muted: oklch(0.955 0.008 145);
+  --muted-foreground: oklch(0.5 0.022 150);
 
-  /* African Union gold */
-  --accent: oklch(0.73 0.115 85);
-  --accent-foreground: oklch(0.22 0.04 60);
+  /* Amber  #FF9900 */
+  --accent: oklch(0.76 0.17 67);
+  --accent-foreground: oklch(0.2 0.04 55);
 
   --destructive: oklch(0.55 0.21 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.52 0.115 155);
+  --success: oklch(0.55 0.14 155);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.68 0.14 65);
-  --warning-foreground: oklch(0.2 0.03 65);
+  --warning: oklch(0.72 0.16 65);
+  --warning-foreground: oklch(0.2 0.04 60);
   --info: oklch(0.53 0.11 245);
   --info-foreground: oklch(0.99 0 0);
 
-  --border: oklch(0.9 0.008 40);
-  --input: oklch(0.9 0.008 40);
-  --ring: oklch(0.42 0.152 12);
+  --border: oklch(0.9 0.012 148);
+  --input: oklch(0.9 0.012 148);
+  --ring: oklch(0.57 0.155 155);
 
-  --chart-1: oklch(0.48 0.16 12);
-  --chart-2: oklch(0.7 0.13 78);
-  --chart-3: oklch(0.55 0.1 195);
+  /* Chart ramp — green-tinted categorical */
+  --chart-1: oklch(0.57 0.155 155);
+  --chart-2: oklch(0.72 0.17 67);
+  --chart-3: oklch(0.55 0.10 195);
   --chart-4: oklch(0.48 0.13 268);
-  --chart-5: oklch(0.56 0.12 152);
+  --chart-5: oklch(0.62 0.14 110);
   --chart-6: oklch(0.62 0.15 42);
 
-  --radius: 0.7rem;
+  --radius: 0.875rem;
 
-  --sidebar: oklch(0.975 0.006 50);
-  --sidebar-foreground: oklch(0.19 0.012 20);
-  --sidebar-primary: oklch(0.42 0.152 12);
-  --sidebar-primary-foreground: oklch(0.99 0.004 60);
-  --sidebar-accent: oklch(0.945 0.01 40);
-  --sidebar-accent-foreground: oklch(0.28 0.05 14);
-  --sidebar-border: oklch(0.9 0.008 40);
-  --sidebar-ring: oklch(0.42 0.152 12);
+  /* Sidebar — very light green tint */
+  --sidebar: oklch(0.974 0.012 148);
+  --sidebar-foreground: oklch(0.18 0.02 155);
+  --sidebar-primary: oklch(0.57 0.155 155);
+  --sidebar-primary-foreground: oklch(0.99 0.004 110);
+  --sidebar-accent: oklch(0.944 0.016 145);
+  --sidebar-accent-foreground: oklch(0.28 0.06 155);
+  --sidebar-border: oklch(0.88 0.014 148);
+  --sidebar-ring: oklch(0.57 0.155 155);
 
-  /* Surfaces used by the restrained glass treatment. */
-  --glass-bg: oklch(1 0 0 / 62%);
-  --glass-border: oklch(0.42 0.152 12 / 10%);
+  /* Glass chrome */
+  --glass-bg: oklch(1 0 0 / 65%);
+  --glass-border: oklch(0.57 0.155 155 / 12%);
+
+  /* Named gradient stop pairs */
+  --grad-primary-from: oklch(0.57 0.155 155);   /* #009B4D */
+  --grad-primary-to:   oklch(0.37 0.12 155);    /* #0F5A36 */
+  --grad-accent-from:  oklch(0.76 0.17 67);     /* #FF9900 */
+  --grad-accent-to:    oklch(0.60 0.20 42);     /* #E65C00 */
 }
 
+/* ── Dark mode ──────────────────────────────────────────────────────────── */
 .dark {
-  --background: oklch(0.165 0.012 25);
-  --foreground: oklch(0.96 0.006 60);
+  /* Deep navy canvas: #0F172A */
+  --background: oklch(0.155 0.022 255);
+  --foreground: oklch(0.96 0.006 110);
 
-  --card: oklch(0.213 0.014 22);
-  --card-foreground: oklch(0.96 0.006 60);
-  --popover: oklch(0.213 0.014 22);
-  --popover-foreground: oklch(0.96 0.006 60);
+  --card: oklch(0.196 0.022 252);
+  --card-foreground: oklch(0.96 0.006 110);
+  --popover: oklch(0.196 0.022 252);
+  --popover-foreground: oklch(0.96 0.006 110);
 
-  --primary: oklch(0.68 0.155 14);
-  --primary-foreground: oklch(0.16 0.02 20);
+  /* Tech Green  #00C853 */
+  --primary: oklch(0.72 0.19 152);
+  --primary-foreground: oklch(0.13 0.02 155);
 
-  --secondary: oklch(0.27 0.02 20);
-  --secondary-foreground: oklch(0.96 0.006 60);
+  --secondary: oklch(0.26 0.026 248);
+  --secondary-foreground: oklch(0.96 0.006 110);
 
-  --muted: oklch(0.265 0.016 22);
-  --muted-foreground: oklch(0.72 0.014 40);
+  --muted: oklch(0.254 0.022 252);
+  --muted-foreground: oklch(0.72 0.018 180);
 
-  --accent: oklch(0.78 0.115 85);
-  --accent-foreground: oklch(0.19 0.03 60);
+  /* AU Bright Gold  #FFCC00 */
+  --accent: oklch(0.88 0.18 92);
+  --accent-foreground: oklch(0.17 0.04 70);
 
   --destructive: oklch(0.68 0.18 25);
   --destructive-foreground: oklch(0.16 0.02 20);
-  --success: oklch(0.68 0.12 155);
-  --success-foreground: oklch(0.15 0.02 155);
-  --warning: oklch(0.78 0.13 70);
-  --warning-foreground: oklch(0.18 0.03 65);
+  --success: oklch(0.72 0.17 152);
+  --success-foreground: oklch(0.13 0.02 155);
+  --warning: oklch(0.82 0.16 75);
+  --warning-foreground: oklch(0.18 0.04 65);
   --info: oklch(0.68 0.11 245);
   --info-foreground: oklch(0.15 0.02 245);
 
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.68 0.155 14);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.72 0.19 152);
 
-  --chart-1: oklch(0.68 0.155 14);
-  --chart-2: oklch(0.8 0.13 82);
-  --chart-3: oklch(0.7 0.1 198);
+  /* Chart ramp — vivid tech palette */
+  --chart-1: oklch(0.72 0.19 152);
+  --chart-2: oklch(0.88 0.18 92);
+  --chart-3: oklch(0.68 0.12 185);
   --chart-4: oklch(0.66 0.13 270);
-  --chart-5: oklch(0.71 0.12 152);
-  --chart-6: oklch(0.74 0.14 45);
+  --chart-5: oklch(0.78 0.16 120);
+  --chart-6: oklch(0.74 0.16 55);
 
-  --sidebar: oklch(0.19 0.014 22);
-  --sidebar-foreground: oklch(0.96 0.006 60);
-  --sidebar-primary: oklch(0.68 0.155 14);
-  --sidebar-primary-foreground: oklch(0.16 0.02 20);
-  --sidebar-accent: oklch(0.27 0.02 20);
-  --sidebar-accent-foreground: oklch(0.96 0.006 60);
-  --sidebar-border: oklch(1 0 0 / 11%);
-  --sidebar-ring: oklch(0.68 0.155 14);
+  /* Sidebar — darkest navy surface */
+  --sidebar: oklch(0.128 0.02 258);
+  --sidebar-foreground: oklch(0.96 0.006 110);
+  --sidebar-primary: oklch(0.72 0.19 152);
+  --sidebar-primary-foreground: oklch(0.13 0.02 155);
+  --sidebar-accent: oklch(0.22 0.024 252);
+  --sidebar-accent-foreground: oklch(0.96 0.006 110);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.72 0.19 152);
 
-  --glass-bg: oklch(0.213 0.014 22 / 62%);
-  --glass-border: oklch(1 0 0 / 9%);
+  --glass-bg: oklch(0.196 0.022 252 / 65%);
+  --glass-border: oklch(0.72 0.19 152 / 15%);
+
+  /* Named gradient stop pairs */
+  --grad-primary-from: oklch(0.72 0.19 152);   /* #00C853 */
+  --grad-primary-to:   oklch(0.48 0.10 185);   /* #007A78 */
+  --grad-accent-from:  oklch(0.88 0.18 92);    /* #FFCC00 */
+  --grad-accent-to:    oklch(0.67 0.21 50);    /* #FF6B00 */
 }
 
 @layer base {
@@ -189,13 +208,10 @@
     @apply font-sans;
     -webkit-font-smoothing: antialiased;
   }
-  /* Arabic needs a face with Arabic coverage; Geist has none. Scoped by the
-     document language so no other locale pays for the extra font. */
   html[lang='ar'],
   html[lang='ar'] body {
     font-family: var(--font-arabic), var(--font-sans), system-ui, sans-serif;
   }
-  /* Latin digits stay readable in Arabic tables and keep column alignment. */
   html[lang='ar'] .tnum {
     font-feature-settings: 'tnum';
     font-variant-numeric: tabular-nums;
@@ -204,13 +220,20 @@
     @apply bg-background text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+  /* Dark: faint tech-green radial bloom from the top of the viewport */
+  .dark body {
+    background-image: radial-gradient(
+      ellipse 90% 40% at 50% -5%,
+      oklch(0.72 0.19 152 / 6%),
+      transparent
+    );
+  }
   h1,
   h2,
   h3,
   h4 {
     @apply font-heading tracking-tight text-balance;
   }
-  /* Respect the reader's motion preference — animation is decoration here. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -223,14 +246,12 @@
   }
 }
 
-/* Tabular figures everywhere numbers are compared down a column.
-   Declared as a utility so it can also be reached from @apply. */
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
 
 @layer components {
-  /* Restrained glass: used only for sticky chrome, never for data surfaces. */
+  /* ── Glass chrome ─────────────────────────────────────────────────────── */
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(14px) saturate(140%);
@@ -238,17 +259,75 @@
     border-color: var(--glass-border);
   }
 
-  /* Bento grid: a 12-column canvas that collapses cleanly to one column. */
+  /* ── Bento grid ──────────────────────────────────────────────────────── */
   .bento {
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12;
   }
 
+  /* ── Stat number ─────────────────────────────────────────────────────── */
   .stat-value {
-    @apply font-heading text-3xl font-semibold tracking-tight tnum sm:text-4xl;
+    @apply font-heading text-4xl font-semibold tracking-tight tnum sm:text-5xl;
   }
 
-  /* Wide content must scroll inside itself, never the page body. */
+  /* ── Card lift shadow ────────────────────────────────────────────────── */
+  .card-lifted {
+    box-shadow:
+      0 1px 4px oklch(0.57 0.155 155 / 6%),
+      0 0 0 1px var(--border);
+  }
+
+  /* ── Horizontal scroll container ─────────────────────────────────────── */
   .scroll-x {
     @apply w-full overflow-x-auto overscroll-x-contain;
+  }
+
+  /* ── AU Primary gradient (green → deep emerald / tech-green → teal) ─── */
+  /* Use on: sidebar bg, hero bands, active nav items                       */
+  .grad-primary {
+    background-image: linear-gradient(
+      135deg,
+      var(--grad-primary-from),
+      var(--grad-primary-to)
+    );
+  }
+
+  /* ── AU Accent gradient (amber → ochre / gold → neon-amber) ─────────── */
+  /* Use on: progress bars, active badges, high-impact CTAs                 */
+  .grad-accent {
+    background-image: linear-gradient(
+      135deg,
+      var(--grad-accent-from),
+      var(--grad-accent-to)
+    );
+  }
+
+  /* ── Gradient border ring ────────────────────────────────────────────── */
+  /* Wrap any child: <div class="grad-border rounded-xl"><div class="m-px"> */
+  .grad-border {
+    background-image: linear-gradient(
+      135deg,
+      var(--grad-primary-from),
+      var(--grad-accent-to)
+    );
+    padding: 1px;
+  }
+
+  /* ── Progress bar accent fill ────────────────────────────────────────── */
+  .grad-progress {
+    background-image: linear-gradient(
+      90deg,
+      var(--grad-accent-from),
+      var(--grad-accent-to)
+    );
+  }
+
+  /* ── Smooth hover glow on interactive cards ──────────────────────────── */
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+  .card-hover:hover {
+    box-shadow:
+      0 4px 24px color-mix(in oklch, var(--grad-primary-from) 18%, transparent),
+      0 0 0 1px color-mix(in oklch, var(--grad-primary-from) 30%, transparent);
   }
 }

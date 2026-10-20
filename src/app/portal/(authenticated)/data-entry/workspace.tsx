@@ -545,7 +545,16 @@ export function DataEntryWorkspace({
                 type="button"
                 onClick={() => toggleSector(sector.code)}
                 aria-expanded={isOpen}
-                className="hover:bg-muted/50 flex w-full items-center gap-3 px-5 py-4 text-left transition-colors"
+                className={cn(
+                  'hover:bg-muted/50 flex w-full items-center gap-3 border-l-4 px-5 py-4 text-left transition-colors',
+                  progress.total === 0
+                    ? 'border-l-border'
+                    : progress.done === progress.total
+                      ? 'border-l-success'
+                      : progress.done > 0
+                        ? 'border-l-accent'
+                        : 'border-l-destructive/50',
+                )}
               >
                 <ChevronDown
                   className={cn('size-4 shrink-0 transition-transform', isOpen && 'rotate-180')}
@@ -557,7 +566,20 @@ export function DataEntryWorkspace({
                     <p className="text-muted-foreground truncate text-xs">{sector.subtitle}</p>
                   ) : null}
                 </div>
-                <span className="text-muted-foreground shrink-0 text-sm tnum">
+                <span className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-sm tnum">
+                  <span
+                    className={cn(
+                      'size-2 rounded-full',
+                      progress.total === 0
+                        ? 'bg-muted-foreground/30'
+                        : progress.done === progress.total
+                          ? 'bg-success'
+                          : progress.done > 0
+                            ? 'bg-accent'
+                            : 'bg-destructive/60',
+                    )}
+                    aria-hidden
+                  />
                   {t('sectorComplete', { done: progress.done, total: progress.total })}
                 </span>
                 <div className="hidden w-24 shrink-0 sm:block">
@@ -689,7 +711,18 @@ function IndicatorRow({
         : { label: t('notReported'), tone: 'bg-muted text-muted-foreground' };
 
   return (
-    <div className={cn('rounded-lg border p-4', issues.length > 0 && 'border-warning/50')}>
+    <div
+      className={cn(
+        'rounded-lg border p-4 transition-colors',
+        value.notApplicable
+          ? 'bg-muted/30 opacity-80'
+          : issues.length > 0
+            ? 'border-warning/50 bg-warning/5'
+            : value.dataAvailable && hasValue(value, indicator.dataType)
+              ? 'border-success/35 bg-success/5'
+              : 'border-border',
+      )}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">

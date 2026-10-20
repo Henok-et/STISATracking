@@ -38,7 +38,7 @@ export async function SiteHeader() {
         <Link href="/" className="flex items-center gap-3">
           <span
             aria-hidden
-            className="bg-primary text-primary-foreground font-heading grid size-9 shrink-0 place-items-center rounded-md text-[0.62rem] font-bold tracking-tight"
+            className="grad-primary text-primary-foreground font-heading grid size-9 shrink-0 place-items-center rounded-md text-[0.62rem] font-bold tracking-tight shadow-sm"
           >
             {tBrand('mark')}
           </span>
@@ -67,7 +67,7 @@ export async function SiteHeader() {
       </div>
 
       {/* Compact nav for small screens, kept out of the main bar. */}
-      <nav aria-label={t('dashboard')} className="scroll-x border-t md:hidden">
+      <nav aria-label={t('dashboard')} className="scroll-x border-t bg-primary/5 md:hidden">
         <div className="flex items-center gap-1 px-4 py-1.5">
           {nav.map((item) => (
             <ButtonLink

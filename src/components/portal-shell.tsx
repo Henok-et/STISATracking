@@ -45,9 +45,9 @@ export async function PortalShell({
           <Link href="/" className="flex items-center gap-3">
             <span
               aria-hidden
-              className="bg-primary text-primary-foreground font-heading grid size-9 shrink-0 place-items-center rounded-md text-[0.62rem] font-bold tracking-tight"
+              className="grad-primary text-primary-foreground font-heading grid size-9 shrink-0 place-items-center rounded-md text-[0.62rem] font-bold tracking-tight shadow-sm"
             >
-              ESTI
+              AU
             </span>
             <span className="hidden leading-tight sm:block">
               <span className="font-heading block text-sm font-semibold">STISA 2034</span>
@@ -74,7 +74,7 @@ export async function PortalShell({
           </div>
         </div>
 
-        <nav aria-label={areaLabel} className="scroll-x border-t">
+        <nav aria-label={areaLabel} className="scroll-x border-t bg-primary/5">
           <div className="mx-auto flex max-w-7xl gap-1 px-4 py-1.5 sm:px-6">
             {nav.map((item) => (
               <ButtonLink key={item.href} href={item.href} variant="ghost" size="sm" className="shrink-0">

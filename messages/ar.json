@@ -2,7 +2,7 @@
   "brand": {
     "name": "ستيسا 2034",
     "tagline": "الرصد والتقييم",
-    "mark": "ESTI"
+    "mark": "AU"
   },
   "nav": {
     "dashboard": "لوحة المتابعة القارية",
@@ -721,7 +721,8 @@
     "announceRecorded": "يُسجَّل التسليم في سجل التدقيق.",
     "announceToFocalPoints": "الإعلان لجهات الاتصال",
     "cycleUpdated": "تم تحديث دورة الإبلاغ",
-    "implementation": "{phase} — التنفيذ {start}–{end} · {count} تقرير",
+    "implementation": "{phase} — التنفيذ {start}–{end} · {count, plural, zero {# تقارير} one {تقرير واحد} two {تقريران} few {# تقارير} many {# تقريرًا} other {# تقرير}}",
+
     "phase1Short": "المرحلة الأولى",
     "phase2Short": "المرحلة الثانية",
     "editWindow": "تعديل النافذة",
